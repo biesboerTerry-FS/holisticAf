@@ -83,8 +83,8 @@ const Navbar = () => {
 				</div>
 
 				{!clerkEnabled ? (
-					<span className="text-xs px-3 py-1.5 rounded-full border border-primary-forest-green/30 text-primary-forest-green/70">
-						Clerk key needed
+					<span className="text-[10px] px-2 py-1 rounded-full border border-primary-forest-green/20 text-primary-forest-green/60 uppercase tracking-wider">
+						local preview
 					</span>
 				) : !user ? (
 					<button
@@ -137,11 +137,7 @@ const Navbar = () => {
 					{user && <NavLink to={"/my-orders"} onClick={() => setOpen(false)}>my orders</NavLink>}
 					{(isAdmin || !clerkEnabled) && <NavLink to={"/admin"} onClick={() => setOpen(false)}>admin</NavLink>}
 
-					{!clerkEnabled ? (
-						<p className="mt-6 text-sm text-center text-primary-forest-green/70 px-6">
-							Add <code>VITE_CLERK_PUBLISHABLE_KEY</code> to enable sign-in.
-						</p>
-					) : !user ? (
+					{!clerkEnabled ? null : !user ? (
 						<button
 							onClick={() => {
 								setOpen(false);

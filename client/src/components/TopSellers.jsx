@@ -1,16 +1,27 @@
 import React, { useEffect, useState } from "react";
 import ProductCard from "./ProductCard";
-import { useAppContext } from "../context/AppContext";
+import axios from "axios";
+import toast from "react-hot-toast";
 
 const TopSellers = () => {
-	const { products } = useAppContext();
 	const [featuredProducts, setFeaturedProducts] = useState([]);
 
 	useEffect(() => {
-		if (products && products.length > 0) {
-			setFeaturedProducts(products.slice(0, 5));
-		}
-	}, [products]);
+		const fetchFeatured = async () => {
+			try {
+				const { data } = await axios.get("/api/kroger/featured");
+				if (data.success) {
+					setFeaturedProducts(data.products.slice(0, 5));
+				} else {
+					toast.error(data.message || "Failed to load featured products");
+				}
+			} catch (error) {
+				console.error("Featured products error:", error);
+				toast.error("Failed to load featured products");
+			}
+		};
+		fetchFeatured();
+	}, []);
 
 	if (!featuredProducts || featuredProducts.length === 0) return null;
 
