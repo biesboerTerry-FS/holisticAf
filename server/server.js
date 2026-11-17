@@ -26,13 +26,30 @@ await connectCloudinary();
 const allowedOrigins = [
 	"http://localhost:5173",
 	"http://localhost:5176",
+	"http://localhost:5177",
+	"http://localhost:5180",
 	"http://127.0.0.1:5173",
 	"http://127.0.0.1:5176",
+	"http://127.0.0.1:5177",
+	"http://127.0.0.1:5180",
 ];
 
 app.use(express.json());
 app.use(cookieParser());
-app.use(cors({ origin: allowedOrigins, credentials: true }));
+app.use((request, response, next) => {
+	const origin = request.headers.origin;
+	if (origin && allowedOrigins.includes(origin)) {
+		response.setHeader("Access-Control-Allow-Origin", origin);
+		response.setHeader("Access-Control-Allow-Credentials", "true");
+		response.setHeader("Vary", "Origin");
+	}
+	if (request.method === "OPTIONS") {
+		response.setHeader("Access-Control-Allow-Methods", "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS");
+		response.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, clerkid");
+		return response.status(204).end();
+	}
+	next();
+});
 
 app.get("/", (request, response) => response.send("API connected"));
 app.use("/api/user", userRouter);

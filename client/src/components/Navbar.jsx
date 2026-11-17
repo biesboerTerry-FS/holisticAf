@@ -64,7 +64,7 @@ const Navbar = () => {
 				<NavLink to={"/products"}>products</NavLink>
 				<NavLink to={"/contact"}>contact</NavLink>
 
-				{(isAdmin || !clerkEnabled) && (
+				{(!clerkEnabled || isAdmin) && (
 					<button
 						onClick={() => navigate("/admin")}
 						className="text-xs border border-primary-forest-green px-2 py-1 hover:bg-primary-forest-green hover:text-primary-warm-white rounded-full transition"
@@ -83,9 +83,18 @@ const Navbar = () => {
 				</div>
 
 				{!clerkEnabled ? (
-					<span className="text-[10px] px-2 py-1 rounded-full border border-primary-forest-green/20 text-primary-forest-green/60 uppercase tracking-wider">
-						local preview
-					</span>
+					!user ? (
+						<button
+							onClick={() => setShowUserLogin(true)}
+							className="cursor-pointer px-6 py-2 bg-secondary-golden-honey text-neutral-charcoal border border-primary-forest-green hover:opacity-90 transition rounded-full text-sm"
+						>
+							login
+						</button>
+					) : (
+						<span className="text-[10px] px-2 py-1 rounded-full border border-primary-forest-green/20 text-primary-forest-green/60 uppercase tracking-wider">
+							local preview
+						</span>
+					)
 				) : !user ? (
 					<button
 						onClick={() => setShowUserLogin(true)}
