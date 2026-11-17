@@ -35,26 +35,30 @@ export const placeOrderCOD = async (request, response) => {
 			let itemPrice = 0;
 			let itemName = "Unknown Product";
 
-			if (item.productSource === "kroger") {
+			if (item.productSource === "themealdb" || item.productSource === "kroger") {
 				console.log(
-					`Looking up Kroger product with UPC: ${item.productId}`,
+					`Looking up external product by UPC/externalId: ${item.productId}`,
 				);
 				product = await KrogerProduct.findOne({
-					upc: item.productId,
+					$or: [
+						{ upc: item.productId },
+						{ externalId: item.productId },
+						{ productId: item.productId },
+					],
 				});
 				if (product) {
 					itemPrice = product.offerPrice || product.price || 0;
 					itemName =
-						product.name || product.description || "Kroger Product";
+						product.name || product.description || "External Product";
 					console.log(
-						`Kroger product found: ${itemName}, Price: ${itemPrice}`,
+						`External product found: ${itemName}, Price: ${itemPrice}`,
 					);
 				} else {
 					console.warn(
-						`Kroger product not found for UPC: ${item.productId}`,
+						`External product not found for: ${item.productId}`,
 					);
 					itemPrice = 0;
-					itemName = "Kroger Product (Not Found)";
+					itemName = "External Product (Not Found)";
 				}
 			} else {
 				console.log(

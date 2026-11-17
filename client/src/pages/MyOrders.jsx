@@ -59,7 +59,8 @@ const MyOrders = () => {
 									<img
 										className="w-16 h-16 object-contain"
 										src={
-											item.productSource === "kroger" &&
+											(item.productSource === "themealdb" ||
+												item.productSource === "kroger") &&
 											item.upc
 												? `/api/media/image?upc=${item.upc}`
 												: assets.leaf

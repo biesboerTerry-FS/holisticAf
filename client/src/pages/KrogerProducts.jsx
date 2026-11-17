@@ -64,7 +64,7 @@ const Products = () => {
 						⟳
 					</div>
 					<p className="text-primary-forest-green text-lg">
-						Loading products from Kroger...
+						Loading holistic & organic products...
 					</p>
 				</div>
 			</div>
@@ -164,12 +164,12 @@ const Products = () => {
 
 				<div className="mt-16 text-center bg-primary-sage-green/20 rounded-lg p-8">
 					<h3 className="text-xl font-semibold text-primary-forest-green mb-2">
-						Real-time Kroger Products
+						Curated Holistic & Organic Products
 					</h3>
 					<p className="text-gray-600">
-						All products displayed are sourced directly from
-						Kroger's current inventory. Prices and availability are
-						updated in real-time.
+						All products displayed are sourced from TheMealDB's free
+						recipe database and mapped to holistic, organic, and
+						plant-forward categories for this storefront.
 					</p>
 				</div>
 			</div>

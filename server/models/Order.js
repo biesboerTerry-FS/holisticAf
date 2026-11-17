@@ -15,7 +15,7 @@ const orderSchema = new mongoose.Schema(
 				},
 				productSource: {
 					type: String,
-					enum: ["local", "kroger"],
+					enum: ["local", "kroger", "themealdb"],
 					default: "local",
 				},
 				quantity: {

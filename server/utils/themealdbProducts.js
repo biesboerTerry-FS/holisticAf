@@ -1,6 +1,31 @@
 import axios from "axios";
 
-const BASE_URL = "https://www.themealdb.com/api/json/v1/1";
+const BASE_URL = process.env.MEALDB_API_URL || "https://www.themealdb.com/api/json/v1/1";
+
+// Map TheMealDB categories to holisticAF-facing categories.
+const categoryDisplayNames = {
+	Vegetarian: "Vegetarian",
+	Vegan: "Vegan",
+	Seafood: "Seafood",
+	Side: "Sides & Salads",
+	Starter: "Starters",
+	Dessert: "Desserts",
+	Breakfast: "Breakfast",
+	Pasta: "Pasta",
+	Miscellaneous: "Holistic Meals",
+};
+
+// Search terms that should resolve to a curated category pull instead of a literal search.
+const HOLISTIC_SEARCH_ALIASES = {
+	healthy: ["Vegetarian", "Vegan", "Seafood", "Side"],
+	organic: ["Vegetarian", "Vegan", "Side"],
+	holistic: ["Vegetarian", "Vegan", "Miscellaneous"],
+	vegetables: ["Vegetarian", "Side"],
+	veggie: ["Vegetarian", "Vegan"],
+	plant: ["Vegetarian", "Vegan"],
+	green: ["Vegetarian", "Side"],
+	clean: ["Vegetarian", "Vegan", "Seafood"],
+};
 
 const HOLISTIC_KEYWORDS = [
 	"organic",
@@ -33,16 +58,10 @@ const HOLISTIC_KEYWORDS = [
 	"detox",
 	"green",
 	"fiber",
+	"fresh",
+	"light",
+	"raw",
 ];
-
-const PREFERRED_CATEGORIES = new Set([
-	"Vegetarian",
-	"Vegan",
-	"Side",
-	"Seafood",
-	"Miscellaneous",
-	"Starter",
-]);
 
 const EXCLUDED_TERMS = [
 	"beef",
@@ -91,7 +110,6 @@ function isHolisticMeal(meal, query = "") {
 
 	const q = String(query || "").toLowerCase();
 	const hasExcluded = EXCLUDED_TERMS.some((term) => text.includes(term));
-	const hasPreferredCategory = PREFERRED_CATEGORIES.has(meal.strCategory);
 	const keywordHits = HOLISTIC_KEYWORDS.filter((k) => text.includes(k)).length;
 	const queryLooksHolistic = HOLISTIC_KEYWORDS.some((k) => q.includes(k));
 
@@ -100,7 +118,6 @@ function isHolisticMeal(meal, query = "") {
 	}
 
 	if (hasExcluded && keywordHits < 2) return false;
-	if (hasPreferredCategory && keywordHits >= 1) return true;
 	if (keywordHits >= 2) return true;
 	if (queryLooksHolistic && keywordHits >= 1) return true;
 	return false;
@@ -111,7 +128,8 @@ function transformMeal(meal) {
 	const seed = hashString(String(meal.idMeal || meal.strMeal || "meal"));
 	const regularPrice = Number((10 + (seed % 1200) / 100).toFixed(2)); // $10.00 - $21.99
 	const offerPrice = Number((regularPrice * 0.9).toFixed(2));
-	const category = meal.strCategory || "Holistic";
+	const rawCategory = meal.strCategory || "Holistic Meals";
+	const category = categoryDisplayNames[rawCategory] || rawCategory;
 	const tags = (meal.strTags || "")
 		.split(",")
 		.map((t) => t.trim())
@@ -122,7 +140,7 @@ function transformMeal(meal) {
 		externalId: `mealdb-${meal.idMeal}`,
 		upc: `mealdb-${meal.idMeal}`,
 		name: meal.strMeal,
-		brand: "TheMealDB",
+		brand: "holisticAF Organic",
 		description:
 			ingredients.length > 0
 				? `Holistic meal inspiration with ingredients: ${ingredients.slice(0, 8).join(", ")}.`
@@ -133,7 +151,7 @@ function transformMeal(meal) {
 		offerPrice,
 		price: { regular: regularPrice, sale: offerPrice },
 		image: [meal.strMealThumb || "https://via.placeholder.com/300x300?text=Meal"],
-		category: ["Vegetarian", "Vegan", "Side"].includes(category) ? "Holistic Meals" : category,
+		category,
 		subCategory: meal.strArea || "Recipe",
 		size: ingredients.length ? `${ingredients.length} ingredients` : "",
 		source: "themealdb",
@@ -149,65 +167,80 @@ async function fetchMeals(url) {
 	return Array.isArray(data?.meals) ? data.meals : [];
 }
 
+async function fetchMealDetails(idMeal) {
+	const meals = await fetchMeals(`${BASE_URL}/lookup.php?i=${encodeURIComponent(idMeal)}`);
+	return meals[0] || null;
+}
+
+async function fetchByCategory(category, max) {
+	const list = await fetchMeals(`${BASE_URL}/filter.php?c=${encodeURIComponent(category)}`);
+	const detailed = await Promise.all(
+		list.slice(0, max * 2).map(async (m) => {
+			try {
+				return await fetchMealDetails(m.idMeal);
+			} catch {
+				return null;
+			}
+		}),
+	);
+	return detailed.filter(Boolean);
+}
+
+async function fetchByCategories(categories, maxPerCategory) {
+	const results = await Promise.all(
+		categories.map(async (category) => {
+			try {
+				return await fetchByCategory(category, maxPerCategory);
+			} catch {
+				return [];
+			}
+		}),
+	);
+	return results.flat();
+}
+
 export async function fetchHolisticMealProducts({ query = "", category = "", limit = 12 } = {}) {
 	try {
-		const max = Math.max(1, Math.min(Number(limit) || 12, 24));
+		const max = Math.max(1, Math.min(Number(limit) || 12, 50));
 		let meals = [];
 
-		if (query) {
-			meals = await fetchMeals(`${BASE_URL}/search.php?s=${encodeURIComponent(query)}`);
-			if (meals.length === 0) {
-				// try ingredient filter when search returns nothing
-				meals = await fetchMeals(`${BASE_URL}/filter.php?i=${encodeURIComponent(query)}`);
-				// filter endpoint returns partial meal objects; fetch details for a few
-				const detailed = await Promise.all(
-					meals.slice(0, max).map(async (m) => {
-						try {
-							const full = await fetchMeals(`${BASE_URL}/lookup.php?i=${encodeURIComponent(m.idMeal)}`);
-							return full[0] || null;
-						} catch {
-							return null;
-						}
-					}),
-				);
-				meals = detailed.filter(Boolean);
+		if (category) {
+			// Resolve display category back to TheMealDB category name if needed.
+			const reverseMap = Object.fromEntries(
+				Object.entries(categoryDisplayNames).map(([k, v]) => [v.toLowerCase(), k]),
+			);
+			const dbCategory = reverseMap[category.toLowerCase()] || category;
+			meals = await fetchByCategory(dbCategory, max);
+		} else if (query) {
+			const q = query.toLowerCase();
+			const aliasCategories = HOLISTIC_SEARCH_ALIASES[q];
+
+			if (aliasCategories) {
+				// Curated multi-category pull for broad holistic terms.
+				const perCategory = Math.max(4, Math.floor(max / aliasCategories.length));
+				meals = await fetchByCategories(aliasCategories, perCategory);
+			} else {
+				meals = await fetchMeals(`${BASE_URL}/search.php?s=${encodeURIComponent(query)}`);
+				if (meals.length === 0) {
+					// Try ingredient filter.
+					const list = await fetchMeals(
+						`${BASE_URL}/filter.php?i=${encodeURIComponent(query)}`,
+					);
+					const detailed = await Promise.all(
+						list.slice(0, max).map(async (m) => {
+							try {
+								return await fetchMealDetails(m.idMeal);
+							} catch {
+								return null;
+							}
+						}),
+					);
+					meals = detailed.filter(Boolean);
+				}
 			}
-		} else if (category) {
-			meals = await fetchMeals(`${BASE_URL}/filter.php?c=${encodeURIComponent(category)}`);
-			const detailed = await Promise.all(
-				meals.slice(0, max * 2).map(async (m) => {
-					try {
-						const full = await fetchMeals(`${BASE_URL}/lookup.php?i=${encodeURIComponent(m.idMeal)}`);
-						return full[0] || null;
-					} catch {
-						return null;
-					}
-				}),
-			);
-			meals = detailed.filter(Boolean);
 		} else {
-			const categories = ["Vegetarian", "Vegan", "Seafood", "Side"];
-			const results = await Promise.all(
-				categories.map(async (c) => {
-					try {
-						return await fetchMeals(`${BASE_URL}/filter.php?c=${encodeURIComponent(c)}`);
-					} catch {
-						return [];
-					}
-				}),
-			);
-			const flat = results.flat();
-			const detailed = await Promise.all(
-				flat.slice(0, max * 3).map(async (m) => {
-					try {
-						const full = await fetchMeals(`${BASE_URL}/lookup.php?i=${encodeURIComponent(m.idMeal)}`);
-						return full[0] || null;
-					} catch {
-						return null;
-					}
-				}),
-			);
-			meals = detailed.filter(Boolean);
+			// No query or category: return a curated holistic mix.
+			meals = await fetchByCategories(["Vegetarian", "Vegan", "Seafood", "Side"], Math.ceil(max / 4));
 		}
 
 		const unique = [];
@@ -229,7 +262,6 @@ export async function fetchHolisticMealProducts({ query = "", category = "", lim
 export function mergeWithMealDbProducts(primaryProducts = [], mealProducts = []) {
 	if (!Array.isArray(mealProducts) || mealProducts.length === 0) return primaryProducts;
 	if (!Array.isArray(primaryProducts) || primaryProducts.length === 0) return mealProducts;
-	// interleave some meal products near top for visibility
 	const out = [...primaryProducts];
 	const insertAt = Math.min(3, out.length);
 	out.splice(insertAt, 0, ...mealProducts.slice(0, 6));

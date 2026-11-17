@@ -99,9 +99,9 @@ const Cart = () => {
 			const orderData = {
 				userId: user.id,
 				items: cartArray.map((item) => {
-					const isKrogerProduct = item.isKrogerProduct || !item._id;
-					const productId = item._id || item.upc;
-					const productSource = isKrogerProduct ? "kroger" : "local";
+					const isExternalProduct = item.isMealDbProduct || item.isKrogerProduct || !item._id;
+					const productId = item._id || item.upc || item.productId;
+					const productSource = isExternalProduct ? "themealdb" : "local";
 
 					return {
 						productId: productId,

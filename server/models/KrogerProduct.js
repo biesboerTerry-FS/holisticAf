@@ -1,11 +1,14 @@
 import mongoose from "mongoose";
 
+// Originally named KrogerProduct for historical seed compatibility.
+// This collection now holds both manually seeded local products and
+// free-API product data (TheMealDB) used by the storefront.
 const KrogerProductSchema = new mongoose.Schema({
 	name: { type: String, required: true },
 	description: { type: String },
-	brand: { type: String },
-	regularPrice: { type: Number, required: true },
-	offerPrice: { type: Number, required: true },
+	brand: { type: String, default: "holisticAF Organic" },
+	regularPrice: { type: Number, default: 0 },
+	offerPrice: { type: Number, default: 0 },
 	price: {
 		regular: { type: Number },
 		sale: { type: Number },
@@ -14,18 +17,15 @@ const KrogerProductSchema = new mongoose.Schema({
 	category: { type: String, required: true },
 	subCategory: { type: String },
 	stock: { type: Number, default: 100 },
-	externalId: { type: String },
+	externalId: { type: String, sparse: true },
 	upc: { type: String, unique: true, sparse: true },
 	productId: { type: String },
 	size: { type: String },
+	source: { type: String, default: "local" },
 	isKrogerProduct: { type: Boolean, default: false },
-	krogerProductId: { type: String },
-	krogerUpc: { type: String },
-	dataSource: {
-		name: { type: String },
-		price: { type: String },
-		image: { type: String },
-	},
+	isMealDbProduct: { type: Boolean, default: false },
+	ingredients: [{ type: String }],
+	tags: [{ type: String }],
 	createdAt: { type: Date, default: Date.now },
 	updatedAt: { type: Date, default: Date.now },
 });
