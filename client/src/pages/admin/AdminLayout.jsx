@@ -4,6 +4,7 @@ import { useClerk } from "@clerk/clerk-react";
 import { assets } from "../../assets/assets";
 import { useAppContext } from "../../context/AppContext";
 import ThemeToggle from "../../components/ThemeToggle";
+import AdminLogin from "../../components/admin/AdminLogin";
 import toast from "react-hot-toast";
 
 const clerkEnabled = Boolean(import.meta.env.VITE_CLERK_PUBLISHABLE_KEY);
@@ -43,6 +44,10 @@ const AdminLayout = () => {
 
 	if (clerkEnabled && !isAdmin) {
 		return <Navigate to="/" replace />;
+	}
+
+	if (!clerkEnabled && !isAdmin) {
+		return <AdminLogin />;
 	}
 
 	return (

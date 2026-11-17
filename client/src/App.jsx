@@ -14,7 +14,6 @@ import AddAddress from "./pages/AddAddress";
 import AddInventory from "./pages/admin/AddInventory";
 import MyOrders from "./pages/MyOrders";
 import AdminLayout from "./pages/admin/AdminLayout";
-import AdminLogin from "./components/admin/AdminLogin";
 import Inventory from "./pages/admin/Inventory";
 import Orders from "./pages/admin/Orders";
 import Dashboard from "./pages/admin/Dashboard";

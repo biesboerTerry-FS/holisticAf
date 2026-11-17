@@ -238,9 +238,9 @@ export const LocalAppContextProvider = ({ children }) => {
 	const state = useAppState();
 
 	useEffect(() => {
-		// No Clerk configured: keep app usable in local/dev mode
+		// No Clerk configured: start logged out; use demo login to try protected sections
 		state.setUser(null);
-		state.setIsAdmin(true);
+		state.setIsAdmin(false);
 		state.setIsAuthLoading(false);
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);

@@ -1,0 +1,36 @@
+{
+  "folders": [
+    {
+      "name": "holisticAF-root",
+      "path": "."
+    },
+    {
+      "name": "frontend",
+      "path": "client"
+    },
+    {
+      "name": "backend",
+      "path": "server"
+    },
+    {
+      "name": "mobile",
+      "path": "mobile"
+    }
+  ],
+  "settings": {
+    "files.exclude": {
+      "**/node_modules": true,
+      "**/.vite": true,
+      "**/.expo": true
+    },
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "extensions": {
+    "recommendations": [
+      "esbenp.prettier-vscode",
+      "bradlc.vscode-tailwindcss",
+      "dbaeumer.vscode-eslint"
+    ]
+  }
+}

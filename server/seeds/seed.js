@@ -6,6 +6,7 @@ import User from "../models/User.js";
 import Address from "../models/Address.js";
 import Newsletter from "../models/Newsletter.js";
 import Contact from "../models/Contact.js";
+import Order from "../models/Order.js";
 import products from "./data/products.js";
 
 const SEED_PASSWORD = process.env.SEED_PASSWORD || "password123";
@@ -42,6 +43,27 @@ const seedUsers = async () => {
 			),
 		);
 	}
+
+	// Ensure a demo account exists when demo credentials are configured
+	const demoEmail = process.env.DEMO_USER_EMAIL;
+	if (demoEmail) {
+		const demoPassword = process.env.DEMO_USER_PASSWORD || SEED_PASSWORD;
+		const demoHashed = await bcrypt.hash(demoPassword, 10);
+		const demoUser = await User.findOneAndUpdate(
+			{ email: demoEmail },
+			{
+				name: process.env.DEMO_USER_NAME || "Demo User",
+				email: demoEmail,
+				clerkId: "demo_user",
+				password: demoHashed,
+				role: "user",
+			},
+			{ upsert: true, new: true, setDefaultsOnInsert: true },
+		);
+		users.push(demoUser);
+		console.log(`demo user: ${demoUser.email} upserted (password: ${demoPassword})`);
+	}
+
 	console.log(`users: ${users.length} upserted (password: ${SEED_PASSWORD})`);
 	return users;
 };
@@ -116,6 +138,43 @@ const seedContacts = async () => {
 	console.log(`contacts: ${messages.length} ensured`);
 };
 
+const seedDemoOrder = async (users) => {
+	const demoUser = users.find((u) => u.email === process.env.DEMO_USER_EMAIL);
+	if (!demoUser) {
+		console.log("demo order: skipped, demo user not found");
+		return null;
+	}
+	const address = await Address.findOne({ userId: demoUser._id.toString() });
+	if (!address) {
+		console.log("demo order: skipped, demo user has no address");
+		return null;
+	}
+	const sampleProduct = products[0] || { name: "Organic Quinoa", externalId: "quinoa-001" };
+	const order = await Order.findOneAndUpdate(
+		{ userId: demoUser._id.toString(), paymentType: "COD" },
+		{
+			userId: demoUser._id.toString(),
+			items: [
+				{
+					product: sampleProduct.externalId || sampleProduct._id || "demo-product",
+					productSource: "local",
+					quantity: 2,
+					price: 12.99,
+					name: sampleProduct.name || "Demo Product",
+				},
+			],
+			amount: 25.98,
+			address: address._id,
+			paymentType: "COD",
+			isPaid: false,
+			status: "processing",
+		},
+		{ upsert: true, new: true, setDefaultsOnInsert: true },
+	);
+	console.log(`demo order: ${order._id} upserted`);
+	return order;
+};
+
 const run = async () => {
 	if (!process.env.MONGODB_URI) {
 		throw new Error("MONGODB_URI is not set in server/.env");
@@ -125,8 +184,10 @@ const run = async () => {
 
 	await seedProducts();
 	const users = await seedUsers();
-	await seedAdmin();
+	const admin = await seedAdmin();
+	if (admin) users.push(admin);
 	await seedAddresses(users);
+	await seedDemoOrder(users);
 	await seedNewsletter();
 	await seedContacts();
 

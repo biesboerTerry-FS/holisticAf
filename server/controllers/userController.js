@@ -149,6 +149,62 @@ export const logoutUser = async (request, response) => {
 	}
 };
 
+// ^ demo login: /api/user/demo-login
+export const demoLogin = async (request, response) => {
+	try {
+		const email = process.env.DEMO_USER_EMAIL;
+		const password = process.env.DEMO_USER_PASSWORD;
+		const name = process.env.DEMO_USER_NAME || "Demo User";
+
+		if (!email || !password) {
+			return response.json({
+				success: false,
+				message: "Demo account is not configured",
+			});
+		}
+
+		let user = await User.findOne({ email });
+		if (!user) {
+			const hashedPassword = await bcrypt.hash(password, 10);
+			user = await User.create({
+				name,
+				email,
+				password: hashedPassword,
+				clerkId: "demo_user",
+				role: "user",
+				cartItems: {},
+			});
+		}
+
+		const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+			expiresIn: "7d",
+		});
+
+		response.cookie("token", token, {
+			httpOnly: true,
+			secure: process.env.NODE_ENV === "production",
+			sameSite: "strict",
+			maxAge: 7 * 24 * 60 * 60 * 1000,
+		});
+
+		return response.json({
+			success: true,
+			user: {
+				id: user._id,
+				name: user.name,
+				email: user.email,
+				role: user.role,
+			},
+		});
+	} catch (error) {
+		console.log(error.message);
+		response.json({
+			success: false,
+			message: error.message,
+		});
+	}
+};
+
 // ^ clerk sync for user
 export const syncClerkUser = async (request, response) => {
 	try {

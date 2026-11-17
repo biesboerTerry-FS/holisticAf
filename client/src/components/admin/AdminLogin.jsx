@@ -2,14 +2,19 @@ import React, { useState, useEffect } from "react";
 import { useAppContext } from "../../context/AppContext";
 import toast from "react-hot-toast";
 
+const demoAdminEmail = import.meta.env.VITE_DEMO_ADMIN_EMAIL;
+const demoAdminPassword = import.meta.env.VITE_DEMO_ADMIN_PASSWORD;
+
 const AdminLogin = () => {
 	const { isAdmin, setIsAdmin, navigate, axios } = useAppContext();
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
+	const [loading, setLoading] = useState(false);
 
 	const onSubmitHandler = async (event) => {
 		try {
 			event.preventDefault();
+			setLoading(true);
 			const { data } = await axios.post("/api/admin/login", {
 				email,
 				password,
@@ -22,6 +27,34 @@ const AdminLogin = () => {
 			}
 		} catch (error) {
 			toast.error(error.message);
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	const demoAdminLogin = async () => {
+		if (!demoAdminEmail || !demoAdminPassword) {
+			toast.error("Demo admin credentials are not configured");
+			return;
+		}
+		try {
+			setLoading(true);
+			const { data } = await axios.post("/api/admin/login", {
+				email: demoAdminEmail,
+				password: demoAdminPassword,
+			});
+			if (data.success) {
+				setIsAdmin(true);
+				navigate("/admin");
+				toast.success("Logged in as demo admin");
+			} else {
+				toast.error(data.message || "Demo admin login failed");
+			}
+		} catch (error) {
+			console.error("Demo admin login error:", error);
+			toast.error("Demo admin login failed. Is the backend running?");
+		} finally {
+			setLoading(false);
 		}
 	};
 
@@ -29,7 +62,7 @@ const AdminLogin = () => {
 		if (isAdmin) {
 			navigate("/admin");
 		}
-	}, [isAdmin]);
+	}, [isAdmin, navigate]);
 
 	return (
 		!isAdmin && (
@@ -85,8 +118,26 @@ const AdminLogin = () => {
 							required
 						/>
 					</div>
-					<button className="bg-primary-forest-green text-primary-cream w-full py-2 rounded-md cursor-pointer transition hover:bg-secondary-deep-forest focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary-golden-honey">
-						login
+					<button
+						disabled={loading}
+						className="bg-primary-forest-green text-primary-cream w-full py-2 rounded-md cursor-pointer transition hover:bg-secondary-deep-forest focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary-golden-honey disabled:opacity-60"
+					>
+						{loading ? "Signing in..." : "login"}
+					</button>
+
+					<div className="w-full flex items-center gap-3">
+						<span className="h-px flex-1 bg-primary-forest-green/15" />
+						<span className="text-xs text-primary-forest-green/50">or</span>
+						<span className="h-px flex-1 bg-primary-forest-green/15" />
+					</div>
+
+					<button
+						type="button"
+						onClick={demoAdminLogin}
+						disabled={loading}
+						className="w-full rounded-md border border-secondary-golden-honey bg-secondary-golden-honey/10 px-4 py-2 text-sm font-semibold text-neutral-charcoal transition hover:bg-secondary-golden-honey/20 disabled:opacity-60"
+					>
+						{loading ? "Signing in..." : "Try demo admin login"}
 					</button>
 				</div>
 			</form>
