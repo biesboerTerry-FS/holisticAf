@@ -1,4 +1,8 @@
+import React, { useEffect, useState } from "react";
 import {
+	ActivityIndicator,
+	Image,
+	ImageBackground,
 	ScrollView,
 	StatusBar,
 	StyleSheet,
@@ -8,20 +12,48 @@ import {
 	View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import Header from "../components/Header";
 import { colors, darkColors } from "../theme/colors";
+import { useAppContext } from "../context/AppContext";
+
+const BACKEND_URL = "http://localhost:4002";
 
 const categories = [
-	"Herbs & Botanicals",
-	"Teas & Tonics",
-	"Superfoods",
-	"Supplements",
-	"Pantry & Whole Foods",
-	"Body & Wellness",
+	{ name: "Herbs & Botanicals", slug: "herbs-botanicals", emoji: "🌿" },
+	{ name: "Teas & Tonics", slug: "teas-tonics", emoji: "🍵" },
+	{ name: "Superfoods", slug: "superfoods", emoji: "✨" },
+	{ name: "Supplements", slug: "supplements", emoji: "💊" },
+	{ name: "Pantry & Whole Foods", slug: "pantry-whole-foods", emoji: "🥣" },
+	{ name: "Body & Wellness", slug: "body-care-wellness", emoji: "🛁" },
 ];
 
 export default function HomeScreen({ navigation, dark, toggleTheme }) {
 	const theme = dark ? darkColors : colors;
 	const themed = styles(theme);
+	const { addToCart } = useAppContext();
+	const [featured, setFeatured] = useState([]);
+	const [loadingFeatured, setLoadingFeatured] = useState(true);
+
+	useEffect(() => {
+		let mounted = true;
+		const load = async () => {
+			try {
+				const res = await fetch(`${BACKEND_URL}/api/kroger/featured`);
+				const data = await res.json();
+				if (mounted && data.success) {
+					setFeatured(Array.isArray(data.products) ? data.products.slice(0, 6) : []);
+				}
+			} catch {
+				// ignore
+			} finally {
+				if (mounted) setLoadingFeatured(false);
+			}
+		};
+		load();
+		return () => {
+			mounted = false;
+		};
+	}, []);
 
 	const subscribe = () => {
 		alert("Thanks for subscribing!");
@@ -33,67 +65,98 @@ export default function HomeScreen({ navigation, dark, toggleTheme }) {
 				barStyle={dark ? "light-content" : "dark-content"}
 				backgroundColor={theme.secondarySoftBeige}
 			/>
-			<View style={themed.nav}>
-				<Text style={[themed.logo, dark && { color: "#e9b04a" }]}>holisticAF</Text>
-				<View style={themed.navActions}>
-					<TouchableOpacity onPress={toggleTheme} style={themed.iconBtn}>
-						<Text style={themed.iconText}>{dark ? "☀" : "☾"}</Text>
-					</TouchableOpacity>
-					<TouchableOpacity
-						style={themed.loginBtn}
-						onPress={() => navigation.navigate("Admin")}
-					>
-						<Text style={themed.loginText}>login</Text>
-					</TouchableOpacity>
-				</View>
-			</View>
-
-			<ScrollView
-				contentContainerStyle={themed.scroll}
-				showsVerticalScrollIndicator={false}
-			>
-				<View style={[themed.hero, dark && { backgroundColor: "#163c35", borderColor: "#6cc3aa33" }]}>
-					<Text style={[themed.heroTitle, dark && { color: "#f5f3ee" }]}>
-						nourish with purpose - your food is your medicine.
-					</Text>
-					<View style={themed.heroActions}>
-						<TouchableOpacity
-							style={[themed.ctaBtn, dark && { backgroundColor: "#e9b04a" }]}
-							onPress={() => navigation.navigate("Products")}
-						>
-							<Text style={themed.ctaText}>shop now</Text>
-						</TouchableOpacity>
-						<TouchableOpacity onPress={() => navigation.navigate("Products")}>
-							<Text style={[themed.linkText, dark && { color: "#d9f2e8" }]}>
-								see top sellers →
-							</Text>
-						</TouchableOpacity>
+			<Header navigation={navigation} dark={dark} toggleTheme={toggleTheme} />
+			<ScrollView contentContainerStyle={themed.scroll} showsVerticalScrollIndicator={false}>
+				<ImageBackground
+					source={require("../../assets/mainBannerBg.png")}
+					style={themed.hero}
+					imageStyle={themed.heroImage}
+					resizeMode="cover"
+				>
+					<View style={[themed.heroOverlay, dark && themed.heroOverlayDark]} />
+					<View style={themed.heroContent}>
+						<Text style={themed.heroBadge}>100% HOLISTIC GOODNESS</Text>
+						<Text style={themed.heroTitle}>nourish with purpose — your food is your medicine.</Text>
+						<View style={themed.heroActions}>
+							<TouchableOpacity
+								style={themed.ctaBtn}
+								onPress={() => navigation.navigate("Products")}
+							>
+								<Text style={themed.ctaText}>shop now</Text>
+							</TouchableOpacity>
+							<TouchableOpacity onPress={() => navigation.navigate("Products")}>
+								<Text style={themed.linkText}>see all products →</Text>
+							</TouchableOpacity>
+						</View>
 					</View>
+				</ImageBackground>
+
+				<View style={themed.sectionHeader}>
+					<Text style={themed.sectionLabel}>EXPLORE</Text>
+					<Text style={themed.sectionTitle}>
+						shop by <Text style={themed.accentText}>category</Text>
+					</Text>
 				</View>
-
-				<Text style={themed.sectionLabel}>EXPLORE</Text>
-				<Text style={themed.sectionTitle}>
-					shop by <Text style={themed.accentText}>category</Text>
-				</Text>
-
 				<View style={themed.categoryGrid}>
 					{categories.map((cat) => (
 						<TouchableOpacity
-							key={cat}
+							key={cat.slug}
 							style={themed.categoryCard}
-							onPress={() => navigation.navigate("Category", { category: cat })}
+							onPress={() => navigation.navigate("Category", { category: cat.name, slug: cat.slug })}
 						>
-							<Text style={themed.categoryTitle}>{cat}</Text>
+							<Text style={themed.categoryEmoji}>{cat.emoji}</Text>
+							<Text style={themed.categoryTitle}>{cat.name}</Text>
 							<Text style={themed.categoryHint}>browse →</Text>
 						</TouchableOpacity>
 					))}
 				</View>
 
-				<View style={themed.newsletter}>
-					<Text style={[themed.newsletterTitle, dark && { color: "#d9f2e8" }]}>
-						stay in the know
+				<View style={themed.sectionHeader}>
+					<Text style={themed.sectionLabel}>FEATURED</Text>
+					<Text style={themed.sectionTitle}>
+						top <Text style={themed.accentText}>picks</Text>
 					</Text>
-					<Text style={[themed.newsletterSubtitle, dark && { color: "#b7cbc4" }]}>
+				</View>
+				{loadingFeatured ? (
+					<ActivityIndicator size="small" color={theme.secondaryGoldenHoney} style={{ marginVertical: 20 }} />
+				) : (
+					<ScrollView
+						horizontal
+						showsHorizontalScrollIndicator={false}
+						contentContainerStyle={themed.featuredRow}
+					>
+						{featured.map((item) => {
+							const imageUrl = Array.isArray(item.image) && item.image.length > 0 ? item.image[0] : null;
+							const price = item.offerPrice ?? item.price?.sale ?? item.regularPrice ?? 0;
+							return (
+								<TouchableOpacity
+									key={item._id || item.externalId || item.name}
+									style={themed.featuredCard}
+									onPress={() => navigation.navigate("ProductDetail", { product: item })}
+								>
+									<View style={themed.featuredImageWrap}>
+										{imageUrl ? (
+											<Image source={{ uri: imageUrl }} style={themed.featuredImage} resizeMode="contain" />
+										) : (
+											<View style={themed.imagePlaceholder}>
+												<Text style={themed.imagePlaceholderText}>{item.name?.charAt(0)}</Text>
+											</View>
+										)}
+									</View>
+									<Text style={themed.featuredName} numberOfLines={2}>{item.name}</Text>
+									<Text style={themed.featuredPrice}>${Number(price).toFixed(2)}</Text>
+									<TouchableOpacity style={themed.addSmallBtn} onPress={() => addToCart(item)}>
+										<Text style={themed.addSmallText}>add</Text>
+									</TouchableOpacity>
+								</TouchableOpacity>
+							);
+						})}
+					</ScrollView>
+				)}
+
+				<View style={themed.newsletter}>
+					<Text style={themed.newsletterTitle}>stay in the know</Text>
+					<Text style={themed.newsletterSubtitle}>
 						subscribe to get the latest offers, new arrivals, and exclusive discounts
 					</Text>
 					<View style={themed.inputRow}>
@@ -110,12 +173,14 @@ export default function HomeScreen({ navigation, dark, toggleTheme }) {
 					</View>
 				</View>
 
-				<TouchableOpacity
-					style={themed.contactLink}
-					onPress={() => navigation.navigate("Contact")}
-				>
-					<Text style={themed.contactLinkText}>Need help? Contact us →</Text>
-				</TouchableOpacity>
+				<View style={themed.footerLinks}>
+					<TouchableOpacity onPress={() => navigation.navigate("Contact")}>
+						<Text style={themed.footerLinkText}>Contact us</Text>
+					</TouchableOpacity>
+					<TouchableOpacity onPress={() => navigation.navigate("Admin")}>
+						<Text style={themed.footerLinkText}>Admin portal</Text>
+					</TouchableOpacity>
+				</View>
 			</ScrollView>
 		</SafeAreaView>
 	);
@@ -123,168 +188,133 @@ export default function HomeScreen({ navigation, dark, toggleTheme }) {
 
 const styles = (theme) =>
 	StyleSheet.create({
-		container: {
-			flex: 1,
-			backgroundColor: theme.secondarySoftBeige,
-		},
-		scroll: {
-			padding: 16,
-			paddingBottom: 40,
-		},
-		nav: {
-			flexDirection: "row",
-			alignItems: "center",
-			justifyContent: "space-between",
-			paddingHorizontal: 16,
-			paddingVertical: 12,
-			borderBottomWidth: 1,
-			borderBottomColor: theme.primaryForestGreen,
-			backgroundColor: theme.secondarySoftBeige,
-		},
-		logo: {
-			fontSize: 22,
-			fontWeight: "700",
-			color: theme.secondaryGoldenHoney,
-		},
-		navActions: {
-			flexDirection: "row",
-			alignItems: "center",
-			gap: 12,
-		},
-		iconBtn: {
-			width: 32,
-			height: 32,
-			borderRadius: 16,
-			borderWidth: 1,
-			borderColor: theme.primaryForestGreen,
-			alignItems: "center",
-			justifyContent: "center",
-		},
-		iconText: {
-			fontSize: 14,
-			color: theme.primaryForestGreen,
-		},
-		loginBtn: {
-			backgroundColor: theme.secondaryGoldenHoney,
-			paddingHorizontal: 16,
-			paddingVertical: 6,
-			borderRadius: 20,
-		},
-		loginText: {
-			color: theme.neutralCharcoal,
-			fontWeight: "600",
-			fontSize: 13,
-		},
+		container: { flex: 1, backgroundColor: theme.secondarySoftBeige },
+		scroll: { paddingBottom: 40 },
 		hero: {
-			borderRadius: 24,
+			margin: 16,
+			borderRadius: 28,
 			overflow: "hidden",
-			backgroundColor: theme.primaryForestGreen,
-			padding: 24,
-			marginBottom: 32,
-			borderWidth: 1,
-			borderColor: `${theme.primaryForestGreen}33`,
+			minHeight: 260,
+			justifyContent: "flex-end",
+		},
+		heroImage: { borderRadius: 28 },
+		heroOverlay: {
+			...StyleSheet.absoluteFillObject,
+			backgroundColor: "rgba(30,77,67,0.55)",
+		},
+		heroOverlayDark: {
+			backgroundColor: "rgba(14,24,22,0.6)",
+		},
+		heroContent: { padding: 22 },
+		heroBadge: {
+			alignSelf: "flex-start",
+			backgroundColor: "rgba(233,176,74,0.9)",
+			color: "#1e1e1e",
+			fontSize: 10,
+			fontWeight: "700",
+			letterSpacing: 1.2,
+			paddingHorizontal: 10,
+			paddingVertical: 4,
+			borderRadius: 999,
+			marginBottom: 10,
 		},
 		heroTitle: {
-			fontSize: 28,
+			fontSize: 26,
 			fontWeight: "700",
-			color: theme.secondaryGoldenHoney,
+			color: "#f5f3ee",
 			fontStyle: "italic",
-			marginBottom: 20,
-			maxWidth: 280,
+			marginBottom: 18,
+			lineHeight: 32,
 		},
-		heroActions: {
-			flexDirection: "row",
-			alignItems: "center",
-			gap: 16,
-		},
+		heroActions: { flexDirection: "row", alignItems: "center", gap: 14, flexWrap: "wrap" },
 		ctaBtn: {
 			backgroundColor: theme.secondaryGoldenHoney,
-			paddingHorizontal: 20,
-			paddingVertical: 10,
-			borderRadius: 6,
+			paddingHorizontal: 22,
+			paddingVertical: 12,
+			borderRadius: 999,
 		},
-		ctaText: {
-			color: theme.neutralCharcoal,
-			fontWeight: "600",
-		},
-		linkText: {
-			color: theme.secondaryGoldenHoney,
-			fontWeight: "500",
-		},
+		ctaText: { color: theme.neutralCharcoal, fontWeight: "700", fontSize: 14 },
+		linkText: { color: "#f5f3ee", fontWeight: "600", fontSize: 14 },
+		sectionHeader: { paddingHorizontal: 16, marginTop: 8, marginBottom: 12 },
 		sectionLabel: {
 			fontSize: 11,
 			fontWeight: "700",
 			letterSpacing: 2,
 			color: theme.primaryForestGreen,
-			textTransform: "uppercase",
 			marginBottom: 4,
 		},
-		sectionTitle: {
-			fontSize: 28,
-			fontWeight: "700",
-			color: theme.primaryForestGreen,
-			marginBottom: 16,
-		},
-		accentText: {
-			color: theme.secondaryGoldenHoney,
-		},
+		sectionTitle: { fontSize: 26, fontWeight: "700", color: theme.primaryForestGreen },
+		accentText: { color: theme.secondaryGoldenHoney },
 		categoryGrid: {
 			flexDirection: "row",
 			flexWrap: "wrap",
 			gap: 12,
-			marginBottom: 32,
+			paddingHorizontal: 16,
+			marginBottom: 24,
 		},
 		categoryCard: {
 			width: "47%",
 			flexGrow: 1,
-			minHeight: 96,
-			padding: 16,
-			borderRadius: 16,
+			minHeight: 110,
+			padding: 14,
+			borderRadius: 20,
 			backgroundColor: theme.primaryWarmWhite,
 			borderWidth: 1,
-			borderColor: `${theme.primaryForestGreen}1a`,
+			borderColor: `${theme.primaryForestGreen}14`,
 			justifyContent: "space-between",
 		},
-		categoryTitle: {
-			fontSize: 15,
-			fontWeight: "600",
-			color: theme.primaryForestGreen,
+		categoryEmoji: { fontSize: 22, marginBottom: 6 },
+		categoryTitle: { fontSize: 14, fontWeight: "700", color: theme.primaryForestGreen },
+		categoryHint: { fontSize: 12, color: theme.neutralMediumGray, marginTop: 6 },
+		featuredRow: { paddingHorizontal: 16, gap: 12, paddingBottom: 8 },
+		featuredCard: {
+			width: 170,
+			backgroundColor: theme.primaryWarmWhite,
+			borderRadius: 20,
+			borderWidth: 1,
+			borderColor: `${theme.primaryForestGreen}14`,
+			padding: 12,
 		},
-		categoryHint: {
-			fontSize: 12,
-			color: theme.neutralMediumGray,
-			marginTop: 8,
-		},
-		newsletter: {
+		featuredImageWrap: {
+			height: 110,
+			backgroundColor: theme.primaryCream || theme.secondarySoftBeige,
+			borderRadius: 14,
 			alignItems: "center",
-			marginTop: 16,
+			justifyContent: "center",
+			marginBottom: 8,
 		},
-		newsletterTitle: {
-			fontSize: 24,
-			fontWeight: "600",
-			color: theme.primaryForestGreen,
-			marginBottom: 6,
+		featuredImage: { width: "75%", height: "75%" },
+		imagePlaceholder: {
+			width: 48,
+			height: 48,
+			borderRadius: 24,
+			backgroundColor: theme.primaryForestGreen,
+			alignItems: "center",
+			justifyContent: "center",
 		},
-		newsletterSubtitle: {
-			fontSize: 14,
-			color: theme.primaryForestGreen,
-			textAlign: "center",
-			marginBottom: 20,
+		imagePlaceholderText: { color: theme.primaryWarmWhite, fontWeight: "700", fontSize: 18 },
+		featuredName: { fontSize: 13, fontWeight: "600", color: theme.primaryForestGreen, minHeight: 36, textTransform: "capitalize" },
+		featuredPrice: { fontSize: 14, fontWeight: "700", color: theme.secondaryGoldenHoney, marginTop: 4 },
+		addSmallBtn: {
+			marginTop: 8,
+			backgroundColor: theme.primaryForestGreen,
+			paddingVertical: 8,
+			borderRadius: 999,
+			alignItems: "center",
 		},
-		inputRow: {
-			flexDirection: "row",
-			width: "100%",
-			maxWidth: 500,
-			height: 44,
-		},
+		addSmallText: { color: theme.primaryWarmWhite, fontWeight: "700", fontSize: 12 },
+		newsletter: { alignItems: "center", marginTop: 28, paddingHorizontal: 16 },
+		newsletterTitle: { fontSize: 24, fontWeight: "700", color: theme.primaryForestGreen, marginBottom: 6 },
+		newsletterSubtitle: { fontSize: 14, color: theme.primaryForestGreen, textAlign: "center", marginBottom: 16, opacity: 0.8 },
+		inputRow: { flexDirection: "row", width: "100%", maxWidth: 520, height: 46 },
 		input: {
 			flex: 1,
 			borderWidth: 1,
-			borderColor: theme.primaryForestGreen,
+			borderColor: `${theme.primaryForestGreen}55`,
 			borderRightWidth: 0,
-			borderTopLeftRadius: 6,
-			borderBottomLeftRadius: 6,
-			paddingHorizontal: 12,
+			borderTopLeftRadius: 999,
+			borderBottomLeftRadius: 999,
+			paddingHorizontal: 16,
 			backgroundColor: theme.primaryWarmWhite,
 			color: theme.primaryForestGreen,
 		},
@@ -292,21 +322,15 @@ const styles = (theme) =>
 			backgroundColor: theme.primaryForestGreen,
 			paddingHorizontal: 20,
 			justifyContent: "center",
-			borderTopRightRadius: 6,
-			borderBottomRightRadius: 6,
+			borderTopRightRadius: 999,
+			borderBottomRightRadius: 999,
 		},
-		subscribeText: {
-			color: theme.primaryWarmWhite,
-			fontWeight: "500",
+		subscribeText: { color: theme.primaryWarmWhite, fontWeight: "700" },
+		footerLinks: {
+			flexDirection: "row",
+			justifyContent: "center",
+			gap: 24,
+			marginTop: 28,
 		},
-		contactLink: {
-			marginTop: 24,
-			alignItems: "center",
-		},
-		contactLinkText: {
-			color: theme.primaryForestGreen,
-			fontWeight: "600",
-			fontSize: 14,
-			textDecorationLine: "underline",
-		},
+		footerLinkText: { color: theme.primaryForestGreen, fontWeight: "600", textDecorationLine: "underline" },
 	});
