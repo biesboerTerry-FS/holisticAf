@@ -44,3 +44,42 @@
 .no-scrollbar::-webkit-scrollbar {
 	display: none;
 }
+
+/* Playful pattern backgrounds */
+.bg-dot-pattern {
+	background-image: radial-gradient(
+		circle,
+		color-mix(in srgb, var(--color-primary-sage-green) 18%, transparent) 2px,
+		transparent 2px
+	);
+	background-size: 26px 26px;
+}
+
+.bg-dot-pattern-honey {
+	background-image: radial-gradient(
+		circle,
+		color-mix(in srgb, var(--color-secondary-golden-honey) 22%, transparent) 2px,
+		transparent 2px
+	);
+	background-size: 22px 22px;
+}
+
+.bg-playful-gradient {
+	background: linear-gradient(
+		135deg,
+		var(--color-secondary-soft-beige) 0%,
+		color-mix(in srgb, var(--color-primary-sage-green) 18%, transparent) 50%,
+		var(--color-secondary-soft-beige) 100%
+	);
+}
+
+.text-gradient {
+	background: linear-gradient(
+		90deg,
+		var(--color-primary-forest-green),
+		var(--color-secondary-golden-honey)
+	);
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+	background-clip: text;
+}

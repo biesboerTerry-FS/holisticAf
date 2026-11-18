@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useAppContext } from "../../context/AppContext";
 import { getHttpErrorMessage } from "../../utils/http";
+import { exportToCSV, exportToPDF } from "../../utils/export";
 
 const Inventory = () => {
 	const { currency, axios } = useAppContext();
@@ -59,6 +60,21 @@ const Inventory = () => {
 		return product.offerPrice ?? 0;
 	};
 
+	const exportRows = useMemo(
+		() =>
+			filtered.map((product) => ({
+				name: product.name || "Unnamed product",
+				category: product.category || "—",
+				regularPrice: Number(getPrice(product) || 0).toFixed(2),
+				offerPrice: Number(getSalePrice(product) || 0).toFixed(2),
+				stock: product.stock ?? 0,
+			})),
+		[filtered],
+	);
+
+	const handleExportCSV = () => exportToCSV(exportRows, "inventory.csv");
+	const handleExportPDF = () => exportToPDF(exportRows, "Inventory Catalog", "inventory.pdf");
+
 	return (
 		<div className="p-4 md:p-6 lg:p-8 text-primary-forest-green">
 			<div className="mx-auto max-w-6xl space-y-5">
@@ -72,12 +88,26 @@ const Inventory = () => {
 							Browse and search products stored in your inventory database.
 						</p>
 					</div>
-					<button
-						onClick={loadInventory}
-						className="rounded-full border border-primary-forest-green/15 bg-secondary-soft-beige/70 px-4 py-2 text-sm font-medium transition hover:bg-primary-sage-green/15"
-					>
-						Refresh
-					</button>
+					<div className="flex flex-wrap gap-2">
+						<button
+							onClick={handleExportCSV}
+							className="rounded-full border border-primary-forest-green/15 bg-secondary-soft-beige/70 px-4 py-2 text-sm font-medium transition hover:bg-primary-sage-green/15"
+						>
+							Export CSV
+						</button>
+						<button
+							onClick={handleExportPDF}
+							className="rounded-full border border-primary-forest-green/15 bg-secondary-soft-beige/70 px-4 py-2 text-sm font-medium transition hover:bg-primary-sage-green/15"
+						>
+							Export PDF
+						</button>
+						<button
+							onClick={loadInventory}
+							className="rounded-full border border-primary-forest-green/15 bg-secondary-soft-beige/70 px-4 py-2 text-sm font-medium transition hover:bg-primary-sage-green/15"
+						>
+							Refresh
+						</button>
+					</div>
 				</div>
 
 				{error ? (

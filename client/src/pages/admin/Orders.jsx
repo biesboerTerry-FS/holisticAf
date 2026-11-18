@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useAppContext } from "../../context/AppContext";
 import { assets, dummyOrders } from "../../assets/assets";
 import toast from "react-hot-toast";
 import { getHttpErrorMessage } from "../../utils/http";
+import { exportToCSV, exportToPDF } from "../../utils/export";
 
 const Orders = () => {
 	const { currency, axios } = useAppContext();
@@ -79,6 +80,30 @@ const Orders = () => {
 		return matchesId || matchesProduct;
 	});
 
+	const exportRows = useMemo(
+		() =>
+			filteredOrders.map((order) => {
+				const items = Array.isArray(order.items) ? order.items : [];
+				const itemsSummary = items
+					.map((item) => `${item.name || "Item"} × ${item.quantity || 0}`)
+					.join("; ");
+				return {
+					orderId: String(order._id || "").slice(-8) || "—",
+					date: order.createdAt ? new Date(order.createdAt).toLocaleDateString() : "—",
+					customer: order.userId ? String(order.userId).slice(-8) : "—",
+					itemsSummary,
+					amount: Number(typeof order.amount === "object" ? order.amount?.total : order.amount || 0).toFixed(2),
+					status: order.status || "pending",
+					paymentType: order.paymentType || "—",
+					paid: order.isPaid ? "Yes" : "No",
+				};
+			}),
+		[filteredOrders],
+	);
+
+	const handleExportCSV = () => exportToCSV(exportRows, "orders.csv");
+	const handleExportPDF = () => exportToPDF(exportRows, "Orders", "orders.pdf");
+
 	return (
 		<div className="p-4 md:p-6 lg:p-8 text-primary-forest-green">
 			<div className="mx-auto max-w-6xl space-y-5">
@@ -92,12 +117,26 @@ const Orders = () => {
 							Search orders, review payments, and update delivery status.
 						</p>
 					</div>
-					<button
-						onClick={fetchOrders}
-						className="rounded-full border border-primary-forest-green/15 bg-secondary-soft-beige/70 px-4 py-2 text-sm font-medium transition hover:bg-primary-sage-green/15"
-					>
-						Refresh
-					</button>
+					<div className="flex flex-wrap gap-2">
+						<button
+							onClick={handleExportCSV}
+							className="rounded-full border border-primary-forest-green/15 bg-secondary-soft-beige/70 px-4 py-2 text-sm font-medium transition hover:bg-primary-sage-green/15"
+						>
+							Export CSV
+						</button>
+						<button
+							onClick={handleExportPDF}
+							className="rounded-full border border-primary-forest-green/15 bg-secondary-soft-beige/70 px-4 py-2 text-sm font-medium transition hover:bg-primary-sage-green/15"
+						>
+							Export PDF
+						</button>
+						<button
+							onClick={fetchOrders}
+							className="rounded-full border border-primary-forest-green/15 bg-secondary-soft-beige/70 px-4 py-2 text-sm font-medium transition hover:bg-primary-sage-green/15"
+						>
+							Refresh
+						</button>
+					</div>
 				</div>
 
 				{error ? (

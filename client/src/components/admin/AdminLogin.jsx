@@ -4,21 +4,29 @@ import toast from "react-hot-toast";
 
 const demoAdminEmail = import.meta.env.VITE_DEMO_ADMIN_EMAIL;
 const demoAdminPassword = import.meta.env.VITE_DEMO_ADMIN_PASSWORD;
+const backendUrl = import.meta.env.VITE_BACKEND_URL || "";
 
 const AdminLogin = () => {
-	const { isAdmin, setIsAdmin, navigate, axios } = useAppContext();
+	const { isAdmin, setIsAdmin, navigate } = useAppContext();
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [loading, setLoading] = useState(false);
+
+	const adminLoginRequest = async (loginEmail, loginPassword) => {
+		const response = await fetch(`${backendUrl}/api/admin/login`, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			credentials: "include",
+			body: JSON.stringify({ email: loginEmail, password: loginPassword }),
+		});
+		return response.json();
+	};
 
 	const onSubmitHandler = async (event) => {
 		try {
 			event.preventDefault();
 			setLoading(true);
-			const { data } = await axios.post("/api/admin/login", {
-				email,
-				password,
-			});
+			const data = await adminLoginRequest(email, password);
 			if (data.success) {
 				setIsAdmin(true);
 				navigate("/admin");
@@ -39,10 +47,7 @@ const AdminLogin = () => {
 		}
 		try {
 			setLoading(true);
-			const { data } = await axios.post("/api/admin/login", {
-				email: demoAdminEmail,
-				password: demoAdminPassword,
-			});
+			const data = await adminLoginRequest(demoAdminEmail, demoAdminPassword);
 			if (data.success) {
 				setIsAdmin(true);
 				navigate("/admin");

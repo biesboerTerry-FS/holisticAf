@@ -6,6 +6,7 @@ import Navbar from "./components/Navbar";
 import Login from "./components/Login";
 import Home from "./pages/Home";
 import Footer from "./components/Footer";
+import CookieBanner from "./components/CookieBanner";
 import Products from "./pages/Products";
 import ProductDetails from "./pages/ProductDetails";
 import ProductCategory from "./pages/ProductCategory";
@@ -18,6 +19,9 @@ import Inventory from "./pages/admin/Inventory";
 import Orders from "./pages/admin/Orders";
 import Dashboard from "./pages/admin/Dashboard";
 import Schedule from "./pages/admin/Schedule";
+import Employees from "./pages/admin/Employees";
+import Managers from "./pages/admin/Managers";
+import LMS from "./pages/admin/LMS";
 import Contact from "./pages/Contact";
 import Featured from "./pages/Featured";
 
@@ -67,10 +71,14 @@ const App = () => {
 						/>
 						<Route path="inventory" element={<Inventory />} />
 						<Route path="orders" element={<Orders />} />
+						<Route path="employees" element={<Employees />} />
+						<Route path="managers" element={<Managers />} />
+						<Route path="lms" element={<LMS />} />
 					</Route>
 				</Routes>
 			</div>
 			{!isAdminPath && <Footer />}
+			{!isAdminPath && <CookieBanner />}
 		</div>
 	);
 };

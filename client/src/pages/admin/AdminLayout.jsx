@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link, NavLink, Outlet, Navigate } from "react-router-dom";
 import { useClerk } from "@clerk/clerk-react";
 import { assets } from "../../assets/assets";
@@ -11,11 +11,34 @@ const clerkEnabled = Boolean(import.meta.env.VITE_CLERK_PUBLISHABLE_KEY);
 
 const AdminLayout = () => {
 	const clerk = clerkEnabled ? useClerk() : null;
-	const { navigate, isAdmin, isAuthLoading, setUser, setIsAdmin } = useAppContext();
+	const { navigate, isAdmin, isAuthLoading, setUser, setIsAdmin, axios } = useAppContext();
+	const [checkingAdmin, setCheckingAdmin] = useState(!clerkEnabled);
+
+	useEffect(() => {
+		if (clerkEnabled || isAdmin) return;
+		let mounted = true;
+		const verify = async () => {
+			try {
+				const { data } = await axios.get("/api/admin/is-auth", { suppressGlobalErrorToast: true });
+				if (mounted && data?.success) setIsAdmin(true);
+			} catch {
+				// not authenticated
+			} finally {
+				if (mounted) setCheckingAdmin(false);
+			}
+		};
+		verify();
+		return () => {
+			mounted = false;
+		};
+	}, [clerkEnabled, isAdmin, setIsAdmin, axios]);
 
 	const sidebarLinks = [
 		{ name: "dashboard", path: "/admin", icon: assets.list },
 		{ name: "schedule", path: "/admin/schedule", icon: assets.list },
+		{ name: "employees", path: "/admin/employees", icon: assets.list },
+		{ name: "managers", path: "/admin/managers", icon: assets.list },
+		{ name: "lms", path: "/admin/lms", icon: assets.list },
 		{ name: "add inventory", path: "/admin/add-inventory", icon: assets.addIcon },
 		{ name: "inventory", path: "/admin/inventory", icon: assets.list },
 		{ name: "orders", path: "/admin/orders", icon: assets.search },
@@ -34,7 +57,7 @@ const AdminLayout = () => {
 		}
 	};
 
-	if (clerkEnabled && isAuthLoading) {
+	if ((clerkEnabled && isAuthLoading) || checkingAdmin) {
 		return (
 			<div className="min-h-screen flex items-center justify-center bg-secondary-soft-beige text-primary-forest-green">
 				Verifying access...

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { useAppContext } from "../../context/AppContext";
 import { getHttpErrorMessage } from "../../utils/http";
+import { exportToCSV, exportToPDF } from "../../utils/export";
 
 const pad = (n) => String(n).padStart(2, "0");
 const toYMD = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -85,6 +86,41 @@ const Schedule = () => {
 		Object.values(map).forEach((list) => list.sort((a, b) => String(a.startTime).localeCompare(String(b.startTime))));
 		return map;
 	}, [shifts, weekDays]);
+
+	const employeeExportRows = useMemo(
+		() =>
+			employees.map((emp) => ({
+				name: emp.name || "—",
+				email: emp.email || "—",
+				phone: emp.phone || "—",
+				position: emp.position || "Staff",
+				role: emp.role || "staff",
+				active: emp.active ? "Yes" : "No",
+			})),
+		[employees],
+	);
+
+	const shiftExportRows = useMemo(
+		() =>
+			shifts.map((shift) => {
+				const emp = shift.employee || {};
+				return {
+					date: shift.date || "—",
+					employee: emp.name || "—",
+					startTime: shift.startTime || "—",
+					endTime: shift.endTime || "—",
+					role: shift.role || "—",
+					location: shift.location || "—",
+					status: shift.status || "scheduled",
+				};
+			}),
+		[shifts],
+	);
+
+	const handleExportEmployeesCSV = () => exportToCSV(employeeExportRows, "employees.csv");
+	const handleExportEmployeesPDF = () => exportToPDF(employeeExportRows, "Employees", "employees.pdf");
+	const handleExportShiftsCSV = () => exportToCSV(shiftExportRows, `shifts-${weekRange.start}-to-${weekRange.end}.csv`);
+	const handleExportShiftsPDF = () => exportToPDF(shiftExportRows, `Shifts ${weekRange.start} to ${weekRange.end}`, "shifts.pdf");
 
 	const createEmployee = async (e) => {
 		e.preventDefault();
@@ -172,14 +208,48 @@ const Schedule = () => {
 	return (
 		<div className="p-4 md:p-6 lg:p-8 text-primary-forest-green">
 			<div className="mx-auto max-w-7xl space-y-6">
-				<div className="rounded-3xl border border-primary-forest-green/10 bg-primary-warm-white/75 p-5 shadow-sm backdrop-blur md:p-6">
-					<p className="text-xs font-medium uppercase tracking-[0.16em] text-primary-forest-green/50">Team</p>
-					<h2 className="mt-1 text-2xl font-semibold tracking-tight">
-						Employee <span className="text-secondary-golden-honey">schedule</span>
-					</h2>
-					<p className="mt-1 text-sm text-primary-forest-green/65">
-						Manage employees and plan weekly shifts for the site.
-					</p>
+				<div className="flex flex-col gap-3 rounded-3xl border border-primary-forest-green/10 bg-primary-warm-white/75 p-5 shadow-sm backdrop-blur md:flex-row md:items-end md:justify-between md:p-6">
+					<div>
+						<p className="text-xs font-medium uppercase tracking-[0.16em] text-primary-forest-green/50">Team</p>
+						<h2 className="mt-1 text-2xl font-semibold tracking-tight">
+							Employee <span className="text-secondary-golden-honey">schedule</span>
+						</h2>
+						<p className="mt-1 text-sm text-primary-forest-green/65">
+							Manage employees and plan weekly shifts for the site.
+						</p>
+					</div>
+					<div className="flex flex-wrap gap-2">
+						<button
+							onClick={handleExportEmployeesCSV}
+							className="rounded-full border border-primary-forest-green/15 bg-secondary-soft-beige/70 px-4 py-2 text-sm font-medium transition hover:bg-primary-sage-green/15"
+						>
+							Export Employees CSV
+						</button>
+						<button
+							onClick={handleExportEmployeesPDF}
+							className="rounded-full border border-primary-forest-green/15 bg-secondary-soft-beige/70 px-4 py-2 text-sm font-medium transition hover:bg-primary-sage-green/15"
+						>
+							Export Employees PDF
+						</button>
+						<button
+							onClick={handleExportShiftsCSV}
+							className="rounded-full border border-primary-forest-green/15 bg-secondary-soft-beige/70 px-4 py-2 text-sm font-medium transition hover:bg-primary-sage-green/15"
+						>
+							Export Shifts CSV
+						</button>
+						<button
+							onClick={handleExportShiftsPDF}
+							className="rounded-full border border-primary-forest-green/15 bg-secondary-soft-beige/70 px-4 py-2 text-sm font-medium transition hover:bg-primary-sage-green/15"
+						>
+							Export Shifts PDF
+						</button>
+						<button
+							onClick={loadData}
+							className="rounded-full border border-primary-forest-green/15 bg-secondary-soft-beige/70 px-4 py-2 text-sm font-medium transition hover:bg-primary-sage-green/15"
+						>
+							Refresh
+						</button>
+					</div>
 				</div>
 
 				{error ? (

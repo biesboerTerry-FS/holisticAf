@@ -6,9 +6,10 @@ import toast from "react-hot-toast";
 const clerkEnabled = Boolean(import.meta.env.VITE_CLERK_PUBLISHABLE_KEY);
 const demoEmail = import.meta.env.VITE_DEMO_USER_EMAIL;
 const demoPassword = import.meta.env.VITE_DEMO_USER_PASSWORD;
+const backendUrl = import.meta.env.VITE_BACKEND_URL || "";
 
 const Login = () => {
-	const { setShowUserLogin, setUser, setIsAdmin, axios } = useAppContext();
+	const { setShowUserLogin, setUser, setIsAdmin } = useAppContext();
 	const [state, setState] = useState("login");
 	const [demoLoading, setDemoLoading] = useState(false);
 
@@ -19,7 +20,12 @@ const Login = () => {
 		}
 		try {
 			setDemoLoading(true);
-			const { data } = await axios.post("/api/user/demo-login");
+			const response = await fetch(`${backendUrl}/api/user/demo-login`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				credentials: "include",
+			});
+			const data = await response.json();
 			if (data.success) {
 				setUser({ ...data.user, clerkId: "demo_user" });
 				setIsAdmin(data.user.role === "admin");
