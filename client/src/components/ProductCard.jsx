@@ -1,6 +1,7 @@
 import React from "react";
 import { assets } from "../assets/assets";
 import { useAppContext } from "../context/AppContext";
+import { getCategoryLabel } from "./Categories";
 
 const ProductCard = ({ product }) => {
 	const { currency, addToCart, removeFromCart, cartItems, navigate } =
@@ -50,7 +51,7 @@ const ProductCard = ({ product }) => {
 		>
 			{product.category && (
 				<span className="absolute top-3 left-3 z-10 inline-flex items-center px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-neutral-charcoal bg-secondary-golden-honey rounded-full shadow-sm">
-					{product.category}
+					{getCategoryLabel(product.category) || product.category}
 				</span>
 			)}
 

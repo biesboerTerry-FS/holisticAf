@@ -21,17 +21,17 @@ const useAppState = () => {
 	const [searchQuery, setSearchQuery] = useState({});
 	const [loading, setLoading] = useState(false);
 
-	const fetchProducts = async (initialQuery = "healthy") => {
+	const fetchProducts = async (initialQuery = "") => {
 		try {
-			if (!initialQuery?.trim()) return;
 			setLoading(true);
-			const { data } = await axios.get("/api/kroger/search", {
-				params: { query: initialQuery, limit: 50 },
+			// Prefer locally seeded holisticAF products for the storefront home/all-products view.
+			const { data } = await axios.get("/api/inventory/inventory?source=local", {
+				suppressGlobalErrorToast: true,
 			});
 			if (data.success) {
-				setProducts(data.products);
+				setProducts(Array.isArray(data.products) ? data.products : []);
 			} else {
-				toast.error(data.message);
+				toast.error(data.message || "Failed to load products");
 			}
 		} catch (error) {
 			console.error(error);
@@ -44,11 +44,17 @@ const useAppState = () => {
 	const searchProducts = async (query) => {
 		try {
 			setLoading(true);
+			const trimmed = String(query || "").trim();
+			if (!trimmed) {
+				await fetchProducts();
+				return;
+			}
 			const { data } = await axios.get("/api/kroger/search", {
-				params: { query, limit: 50 },
+				params: { query: trimmed, limit: 50 },
+				suppressGlobalErrorToast: true,
 			});
 			if (data.success) {
-				setProducts(data.products);
+				setProducts(Array.isArray(data.products) ? data.products : []);
 				if (data.products.length === 0) {
 					toast.error("No products found. Try a different search.");
 				}
@@ -68,11 +74,12 @@ const useAppState = () => {
 	const getProductsByCategory = async (category) => {
 		try {
 			setLoading(true);
-			const { data } = await axios.get(`/api/kroger/category/${category}`, {
+			const { data } = await axios.get(`/api/kroger/category/${encodeURIComponent(category)}`, {
 				params: { limit: 50 },
+				suppressGlobalErrorToast: true,
 			});
 			if (data.success) {
-				setProducts(data.products);
+				setProducts(Array.isArray(data.products) ? data.products : []);
 			} else {
 				toast.error("Failed to load category products");
 			}
@@ -134,9 +141,8 @@ const useAppState = () => {
 		return Math.round(totalAmount * 100) / 100;
 	};
 
-	useEffect(() => {
-		fetchProducts();
-	}, []);
+	// Products are fetched on-demand by page components (Products, ProductSearch, etc.)
+	// so category/search filters are not overwritten by a global initial load.
 
 	// Persist cart for logged-in app user
 	useEffect(() => {

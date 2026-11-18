@@ -36,7 +36,14 @@ export const addProduct = async (request, response) => {
 // ^ get all products: /api/inventory/
 export const inventoryList = async (request, response) => {
 	try {
-		const products = await KrogerProduct.find({});
+		const filter = {};
+		const source = String(request.query.source || "").trim().toLowerCase();
+		if (source === "local") {
+			filter.$or = [{ source: "local" }, { isKrogerProduct: false, isMealDbProduct: { $ne: true } }];
+		} else if (source === "themealdb") {
+			filter.isMealDbProduct = true;
+		}
+		const products = await KrogerProduct.find(filter);
 		response.json({
 			success: true,
 			products,

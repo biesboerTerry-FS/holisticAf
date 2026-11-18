@@ -11,7 +11,27 @@ import products from "./data/products.js";
 
 const SEED_PASSWORD = process.env.SEED_PASSWORD || "password123";
 
+const LOCAL_CATEGORIES = [
+	"herbs-botanicals",
+	"teas-tonics",
+	"superfoods",
+	"supplements",
+	"pantry-whole-foods",
+	"body-care-wellness",
+];
+
 const seedProducts = async () => {
+	// Remove cached TheMealDB meal recipes and any old imports that do not fit our category model.
+	const removed = await KrogerProduct.deleteMany({
+		$or: [
+			{ isMealDbProduct: true },
+			{ category: { $nin: LOCAL_CATEGORIES } },
+		],
+	});
+	if (removed.deletedCount > 0) {
+		console.log(`products: removed ${removed.deletedCount} non-category items`);
+	}
+
 	const docs = await Promise.all(
 		products.map((product) =>
 			KrogerProduct.findOneAndUpdate(
