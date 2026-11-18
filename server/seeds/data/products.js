@@ -1,3 +1,18 @@
+const CATEGORY_COLORS = {
+	"herbs-botanicals": { bg: "1e4d43", text: "e9b04a" },
+	"teas-tonics": { bg: "f5f3ee", text: "1e4d43" },
+	"superfoods": { bg: "e9b04a", text: "1e4d43" },
+	"supplements": { bg: "9dbfaf", text: "1e4d43" },
+	"pantry-whole-foods": { bg: "d9f2e8", text: "1e4d43" },
+	"body-care-wellness": { bg: "d9f2e8", text: "1e4d43" },
+};
+
+const placeholderImage = (category, name) => {
+	const colors = CATEGORY_COLORS[category] || { bg: "1e4d43", text: "e9b04a" };
+	const text = encodeURIComponent(name);
+	return `https://placehold.co/400x400/${colors.bg}/${colors.text}?text=${text}`;
+};
+
 const item = (category, subCategory, name, description, size, price, offerPrice, stock = 60) => ({
 	name,
 	brand: "holisticAF",
@@ -8,7 +23,7 @@ const item = (category, subCategory, name, description, size, price, offerPrice,
 	regularPrice: price,
 	offerPrice,
 	price: { regular: price, sale: offerPrice },
-	image: [],
+	image: [placeholderImage(category, name)],
 	stock,
 	externalId: `${category}-${name}`.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
 	isKrogerProduct: false,

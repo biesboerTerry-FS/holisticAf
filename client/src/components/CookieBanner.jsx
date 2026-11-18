@@ -66,7 +66,7 @@ const CookieBanner = () => {
 					<div className="flex flex-col lg:flex-row lg:items-start gap-5 lg:gap-8">
 						<div className="flex-1">
 							<h3 className="text-xl sm:text-2xl font-bold text-primary-forest-green">
-								cookie preferences 🍪
+								cookie preferences
 							</h3>
 							<p className="text-sm text-primary-forest-green/70 mt-2 leading-relaxed max-w-xl">
 								We use cookies to make your holisticAF experience

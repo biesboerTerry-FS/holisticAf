@@ -22,10 +22,12 @@ const ProductCard = ({ product }) => {
 		product.offerPrice ?? product.price?.sale ?? regularPrice;
 
 	const resolveImage = () => {
-		if (product.image) {
-			return Array.isArray(product.image)
-				? product.image[0]
-				: product.image;
+		const hasImages = Array.isArray(product.image)
+			? product.image.length > 0 && product.image[0]
+			: Boolean(product.image);
+
+		if (hasImages) {
+			return Array.isArray(product.image) ? product.image[0] : product.image;
 		}
 
 		if (product.upc) {
