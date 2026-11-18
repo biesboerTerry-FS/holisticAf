@@ -33,7 +33,47 @@ const App = () => {
 		<div className="text-default flex flex-col min-h-screen bg-secondary-soft-beige">
 			{isAdminPath ? null : <Navbar />}
 			{showUserLogin ? <Login /> : null}
-			<Toaster />
+			<Toaster
+				position="top-center"
+				toastOptions={{
+					duration: 3500,
+					style: {
+						background: "var(--color-primary-warm-white)",
+						color: "var(--color-secondary-deep-forest)",
+						border: "1px solid color-mix(in srgb, var(--color-primary-forest-green) 18%, transparent)",
+						borderRadius: "16px",
+						padding: "12px 16px",
+						fontSize: "14px",
+						fontWeight: "500",
+						boxShadow: "0 10px 30px -12px rgba(30, 77, 67, 0.25)",
+						backdropFilter: "blur(8px)",
+					},
+					success: {
+						iconTheme: {
+							primary: "var(--color-semantic-success)",
+							secondary: "#ffffff",
+						},
+						style: {
+							border: "1px solid color-mix(in srgb, var(--color-semantic-success) 35%, transparent)",
+						},
+					},
+					error: {
+						iconTheme: {
+							primary: "var(--color-semantic-error)",
+							secondary: "#ffffff",
+						},
+						style: {
+							border: "1px solid color-mix(in srgb, var(--color-semantic-error) 35%, transparent)",
+						},
+					},
+					loading: {
+						iconTheme: {
+							primary: "var(--color-secondary-golden-honey)",
+							secondary: "color-mix(in srgb, var(--color-primary-warm-white) 85%, transparent)",
+						},
+					},
+				}}
+			/>
 
 			<div
 				className={`${
